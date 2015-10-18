@@ -182,8 +182,8 @@
                         next-chars)
            characters  (cons first-char part-chars)
            rest-chars  (drop (count part-chars) next-chars)
-           tokens-seed  (reduce #(assoc %1 %2 tokenclass) mtok characters)]
-       (recur rest-chars tokens-seed class-mappings))
+           new-tokens  (reduce #(assoc %1 %2 tokenclass) mtok characters)]
+       (recur rest-chars new-tokens class-mappings))
      mtok))
   ([chars mtok fk & kvs]
    (classify-characters chars mtok (apply hash-map (cons fk kvs)))))
