@@ -86,7 +86,7 @@
   
   Returns an updated map."
   [mtok token-class ^java.lang.Character c]
-  (assoc c token-class))
+  (assoc mtok c token-class))
 
 (defn assoc-chars
   "Associates each character from a sequence of characters given as a last
