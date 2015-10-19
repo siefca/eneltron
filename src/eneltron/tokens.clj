@@ -20,8 +20,8 @@
   there are two arguments, the first of them should be a map describing token
   classes and rules. Otherwise *tokens* special variable will be used as
   the source of mappings."
-  ([^java.lang.Character c]        (*tokens* (get-char-type c)))
-  ([tokens ^java.lang.Character c] (tokens   (get-char-type c))))
+  ([^Character c]        (*tokens* (get-char-type c)))
+  ([tokens ^Character c] (tokens   (get-char-type c))))
 
 ;; Token classes operations.
 
@@ -30,7 +30,7 @@
   the second argument by updating a map passed as the first argument.
   
   Returns an updated map."
-  [mtok token-class ^java.lang.Character c]
+  [mtok token-class ^Character c]
   (assoc mtok c token-class))
 
 (defn assoc-chars
@@ -65,8 +65,8 @@
 
 (defn get-token-class
   "Gets token class for a given character."
-  ([^java.lang.Character chr]        (*tokens* chr)) 
-  ([^java.lang.Character chr tokens] (tokens   chr)))
+  ([^Character chr]        (*tokens* chr)) 
+  ([^Character chr tokens] (tokens   chr)))
 
 ;; Token rules operations.
 ;;
@@ -96,8 +96,8 @@
 
 (defn get-token-rule
   "Returns a token rule for a character given as the first argument."
-  ([^java.lang.Character chr] (get-token-rule chr *tokens*))
-  ([^java.lang.Character chr tokens]
+  ([^Character chr] (get-token-rule chr *tokens*))
+  ([^Character chr tokens]
    (let [tokops (:__ops tokens)]
      (tokops (tokens chr)))))
 
