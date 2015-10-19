@@ -186,7 +186,7 @@
   ([^Character chr tokens]
    (let [r (get-token-rule  chr tokens)
          c (get-token-class chr tokens)]
-     (list c r))))
+     {:token-rule r :token-class c})))
 
 (defn tokenize
   ([chars] (tokenize chars *tokens*))
