@@ -182,7 +182,7 @@
             part-chars  (take-while #(= token-class (tokens %1)) next-chars)
             results     (cons first-char part-chars)
             rest-chars  (drop (count part-chars) next-chars)
-            exe         (tokenize-core rest-chars tokens token-rules)]
+            exe         (tokenize rest-chars tokens token-rules)]
         (if (= :drop token-rule) exe (cons results exe)))))))
 
 (gentokens *tokens*
