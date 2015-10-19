@@ -87,16 +87,19 @@
 
 (defn assoc-rule
   "Associates a token rule given as the second argument with a token class given
-  as the last argument by updating a map passed as the first argument. If there
-  are more arguments, it does that for any element (any token class).
+  as the last argument by updating a map (:token-class->:token-rule) passed as
+  the first argument. If there are more arguments, it does that for any
+  element (any token class).
   
   Returns an updated map."
   ([mtok token-rule token-classes]
-   (let [tclasses (map keyword
-                       (if (sequential? token-classes)
-                         token-classes
-                         (list token-classes)))]
-     (reduce-ops #(assoc %1 %2 token-rule) mtok tclasses)))
+   (if (= :default token-rule)
+     (recur mtok token-classes token-rule)
+     (let [tclasses (map keyword
+                         (if (sequential? token-classes)
+                           token-classes
+                           (list token-classes)))]
+       (reduce-ops #(assoc %1 %2 token-rule) mtok tclasses))))
   ([mtok token-rule token-class & other-classes]
    (assoc-rule mtok token-rule (cons token-class other-classes))))
 
@@ -129,7 +132,7 @@
   ([^Character chr] (get-token-rule chr *tokens*))
   ([^Character chr tokens]
    (let [tokops (:__ops tokens)]
-     (tokops (tokens chr)))))
+     (tokops (tokens chr) (:default tokops)))))
 
 ;; Tokens generation.
 ;;
@@ -193,7 +196,7 @@
     (when-first [first-char chars]
       (let [next-chars  (next chars)
             token-class (tokens first-char)
-            token-rule  (token-rules token-class)
+            token-rule  (token-rules token-class (:default token-rules))
             part-chars  (take-while #(= token-class (tokens %1)) next-chars)
             results     (cons first-char part-chars)
             rest-chars  (drop (count part-chars) next-chars)
@@ -201,7 +204,7 @@
         (case token-rule
           :drop exe
           :keep (cons results exe)
-          (:__default token-rules)))))))
+          (cons results exe)))))))
 
 (defn initialize-tokenizer
   "Initializes character->:token-class and :token-class->:token-rule mappings
