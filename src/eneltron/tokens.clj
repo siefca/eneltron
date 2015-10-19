@@ -1,47 +1,7 @@
-(ns eneltron.tokens ^{:doc "Eneltron library – tokenization support."
-                      :author "Paweł Wilk"}
-  (:require  [djy.char :as u]))
-
-;; Unicode character classess defined as numeric constants
-;; mapped to keywords.
-
-(def unicode-class-to-type
-  {Character/UPPERCASE_LETTER          :UPPERCASE_LETTER
-   Character/COMBINING_SPACING_MARK    :COMBINING_SPACING_MARK
-   Character/CONNECTOR_PUNCTUATION     :CONNECTOR_PUNCTUATION
-   Character/CONTROL                   :CONTROL
-   Character/CURRENCY_SYMBOL           :CURRENCY_SYMBOL
-   Character/DASH_PUNCTUATION          :DASH_PUNCTUATION
-   Character/DECIMAL_DIGIT_NUMBER      :DECIMAL_DIGIT_NUMBER
-   Character/ENCLOSING_MARK            :ENCLOSING_MARK
-   Character/END_PUNCTUATION           :END_PUNCTUATION
-   Character/FINAL_QUOTE_PUNCTUATION   :FINAL_QUOTE_PUNCTUATION
-   Character/FORMAT                    :FORMAT
-   Character/INITIAL_QUOTE_PUNCTUATION :INITIAL_QUOTE_PUNCTUATION
-   Character/LETTER_NUMBER             :LETTER_NUMBER
-   Character/LINE_SEPARATOR            :LINE_SEPARATOR
-   Character/LOWERCASE_LETTER          :LOWERCASE_LETTER
-   Character/MATH_SYMBOL               :MATH_SYMBOL
-   Character/MODIFIER_LETTER           :MODIFIER_LETTER
-   Character/MODIFIER_SYMBOL           :MODIFIER_SYMBOL
-   Character/NON_SPACING_MARK          :NON_SPACING_MARK
-   Character/OTHER_LETTER              :OTHER_LETTER
-   Character/OTHER_NUMBER              :OTHER_NUMBER
-   Character/OTHER_PUNCTUATION         :OTHER_PUNCTUATION
-   Character/OTHER_SYMBOL              :OTHER_SYMBOL
-   Character/PARAGRAPH_SEPARATOR       :PARAGRAPH_SEPARATOR
-   Character/PRIVATE_USE               :PRIVATE_USE
-   Character/SPACE_SEPARATOR           :SPACE_SEPARATOR
-   Character/START_PUNCTUATION         :START_PUNCTUATION
-   Character/SURROGATE                 :SURROGATE
-   Character/TITLECASE_LETTER          :TITLECASE_LETTER
-   Character/UNASSIGNED                :UNASSIGNED})
-
-;; Lazy sequence of all characters. Note that some supplementary characters are
-;; represented as java.lang.String objects!
-
-(def all-chars (u/char-range (Character/MIN_CODE_POINT)
-                             (Character/MAX_CODE_POINT)))
+(ns eneltron.tokens
+  ^{:doc "Eneltron library – tokenization support."
+    :author "Paweł Wilk"}
+  (:require [eneltron.chars :refer :all]))
 
 ;; Character-to-token-class and token-class-to-operation mappings basic
 ;; structure.
@@ -54,21 +14,6 @@
 
 ;; Character operations.
 ;;
-
-(defmacro ensure-char-seq
-  "Ensures that the given argument is a sequence of characters.
-  Returns a sequence."
-  [s]
-  `(let [s# ~s]
-     (if (seq? s#) s# (u/char-seq s#))))
-
-(defn get-char-type
-  "Returns a type of a character given as the first argument."
-  [^java.lang.Character c]
-  (unicode-class-to-type
-   (try (Character/getType c)
-        (catch java.lang.ClassCastException e
-          (Character/getType (u/code-point-of c)))) :UNASSIGNED))
 
 (defn get-char-token-class
   "Returns a token class (keyword) of a character given as the last argument. If
