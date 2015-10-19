@@ -185,42 +185,42 @@
             exe         (tokenize rest-chars tokens token-rules)]
         (if (= :drop token-rule) exe (cons results exe)))))))
 
-(gentokens *tokens*
-           :UPPERCASE_LETTER          :letter
-           :COMBINING_SPACING_MARK    :space
-           :CONNECTOR_PUNCTUATION     :letter
-           :CONTROL                   :control
-           :CURRENCY_SYMBOL           :symbol
-           :DASH_PUNCTUATION          :letter
-           :DECIMAL_DIGIT_NUMBER      :number
-           :ENCLOSING_MARK            :punctuation
-           :END_PUNCTUATION           :punctuation
-           :FINAL_QUOTE_PUNCTUATION   :punctuation
-           :FORMAT                    :format
-           :INITIAL_QUOTE_PUNCTUATION :punctuation
-           :LETTER_NUMBER             :number
-           :LINE_SEPARATOR            :separator
-           :LOWERCASE_LETTER          :letter
-           :MATH_SYMBOL               :letter
-           :MODIFIER_LETTER           :letter
-           :MODIFIER_SYMBOL           :symbol
-           :NON_SPACING_MARK          :letter
-           :OTHER_LETTER              :letter
-           :OTHER_NUMBER              :number
-           :OTHER_PUNCTUATION         :punctuation
-           :OTHER_SYMBOL              :symbol
-           :PARAGRAPH_SEPARATOR       :separator
-           :PRIVATE_USE               :private
-           :SPACE_SEPARATOR           :separator
-           :START_PUNCTUATION         :punctuation
-           :SURROGATE                 :letter
-           :TITLECASE_LETTER          :letter
-           :UNASSIGNED                :unassigned)
-
-(def tokrule-to-tokop
-  {:keep [:letter :number :space :symbol :separator :punctuation]
-   :drop [:control :format :private]})
-
+(defn initialize-tokenizer
+  (gentokens *tokens*
+             :UPPERCASE_LETTER          :letter
+             :COMBINING_SPACING_MARK    :space
+             :CONNECTOR_PUNCTUATION     :letter
+             :CONTROL                   :control
+             :CURRENCY_SYMBOL           :symbol
+             :DASH_PUNCTUATION          :letter
+             :DECIMAL_DIGIT_NUMBER      :number
+             :ENCLOSING_MARK            :punctuation
+             :END_PUNCTUATION           :punctuation
+             :FINAL_QUOTE_PUNCTUATION   :punctuation
+             :FORMAT                    :format
+             :INITIAL_QUOTE_PUNCTUATION :punctuation
+             :LETTER_NUMBER             :number
+             :LINE_SEPARATOR            :separator
+             :LOWERCASE_LETTER          :letter
+             :MATH_SYMBOL               :letter
+             :MODIFIER_LETTER           :letter
+             :MODIFIER_SYMBOL           :symbol
+             :NON_SPACING_MARK          :letter
+             :OTHER_LETTER              :letter
+             :OTHER_NUMBER              :number
+             :OTHER_PUNCTUATION         :punctuation
+             :OTHER_SYMBOL              :symbol
+             :PARAGRAPH_SEPARATOR       :separator
+             :PRIVATE_USE               :private
+             :SPACE_SEPARATOR           :separator
+             :START_PUNCTUATION         :punctuation
+             :SURROGATE                 :letter
+             :TITLECASE_LETTER          :letter
+             :UNASSIGNED                :unassigned)
+  
+  (defrules *tokens*
+    :keep [:letter :number :space :symbol :separator :punctuation]
+    :drop [:control :format :private]))
 
 ;;(tokenize "Siała baba mak. Nie wiedziała jak. Raz, dwa, trzy – oraz jeszcze –
 ;;cztery.")
