@@ -1,10 +1,10 @@
 (ns eneltron.tokens
   ^{:doc "Eneltron library – tokenization support."
     :author "Paweł Wilk"}
-  (:require [eneltron.chars :refer :all]))
+  (:require [eneltron.utils :refer :all]
+            [eneltron.chars :refer :all]))
 
-;; Character-to-token-class and token-class-to-operation mappings basic
-;; structure.
+;; Character-to-token-class and token-class-to-operation mappings.
 
 (def tokens-seed {:__ops {}})
 
@@ -90,7 +90,10 @@
   
   Returns an updated map."
   ([mtok token-rule token-classes]
-   (let [tclasses (if (seq? token-classes) token-classes (list token-classes))]
+   (let [tclasses (map keyword
+                       (if (sequential? token-classes)
+                         token-classes
+                         (list token-classes)))]
      (reduce-ops #(assoc %1 %2 token-rule) mtok tclasses)))
   ([mtok token-rule token-class & other-classes]
    (assoc-rule mtok token-rule (cons token-class other-classes))))
@@ -102,20 +105,22 @@
   defined already) and mappings expressed as pairs, where first elements should
   be keywords indicating token rules (e.g. :drop or :keep) and second keywords
   indicating token classes.
-
+  
   Token class may be expressed as a single keyword (if there is a single token
   class to assign) or as a sequential collection (vector, list and so on).
-
+  
   Example:
-
+  
   (defrules *tokens*
     :keep :letter
-    :drop [:format :control]"
+    :drop [:format :control]
+  
+  Returns a dynamic Var bound to token-classes map (character->:token-class)."
   (let [dyname (with-meta name {:dynamic true})
         calls  (map #(cons 'assoc-rule %1) (partition-all 2 kvs))]
-    `(do
-       (defonce ~dyname tokens-seed)
-       (alter-var-root (var ~dyname) #(-> %1 (clear-rules) ~@calls)))))
+    `(let [v# (defonce-var ~dyname tokens-seed)]
+       (alter-var-root v# #(-> %1 (clear-rules) ~@calls))
+       v#)))
 
 (defn get-token-rule
   "Returns a token rule for a character given as the first argument."
@@ -162,13 +167,21 @@
   token class. Takes key-value pairs of keywords (:character-type->:token-class)
   in order to create associations.
   
-  Returns a token-classes map (character->:token-class)."
+  Returns a dynamic Var bound to token-classes map (character->:token-class)."
   [name & kvs]
   (let [dyname (with-meta name {:dynamic true})]
     `(def ~dyname (classify-characters all-chars tokens-seed ~@kvs))))
 
 ;; Tokenization.
 ;;
+
+(defn get-token-info
+  "Gets token class and token rule for a given character."
+  ([^Character chr] (get-token-info chr *tokens*))
+  ([^Character chr tokens]
+   (let [r (get-token-rule  chr tokens)
+         c (get-token-class chr tokens)]
+     (list c r))))
 
 (defn tokenize
   ([chars] (tokenize chars *tokens*))
@@ -183,9 +196,15 @@
             results     (cons first-char part-chars)
             rest-chars  (drop (count part-chars) next-chars)
             exe         (tokenize rest-chars tokens token-rules)]
-        (if (= :drop token-rule) exe (cons results exe)))))))
+        (case token-rule
+          :drop exe
+          :keep (cons results exe)
+          (:__default token-rules)))))))
 
 (defn initialize-tokenizer
+  "Initializes character->:token-class and :token-class->:token-rule mappings
+  with default values."
+  []
   (gentokens *tokens*
              :UPPERCASE_LETTER          :letter
              :COMBINING_SPACING_MARK    :space
@@ -219,8 +238,9 @@
              :UNASSIGNED                :unassigned)
   
   (defrules *tokens*
-    :keep [:letter :number :space :symbol :separator :punctuation]
-    :drop [:control :format :private]))
+    :keep    [:letter :number :space :symbol :separator :punctuation]
+    :drop    [:control :format :private]
+    :default :keep))
 
 ;;(tokenize "Siała baba mak. Nie wiedziała jak. Raz, dwa, trzy – oraz jeszcze –
 ;;cztery.")
