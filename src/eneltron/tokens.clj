@@ -97,15 +97,25 @@
 
 (defmacro defrules
   [name & kvs]
-  "Adds rules to token classes by creatnig mappings :token-class->:token-rule.
-  Takes name of dynamic variable to define (if not defined already) and mappings
-  expressed as pairs, where first elements should be keywords indicating token
-  rules (e.g. :drop or :keep) and second keywords indicating token classes."
+  "Definies new set of rules for token classes by creatnig mappings
+  :token-class->:token-rule. Takes name of dynamic variable to define (if not
+  defined already) and mappings expressed as pairs, where first elements should
+  be keywords indicating token rules (e.g. :drop or :keep) and second keywords
+  indicating token classes.
+
+  Token class may be expressed as a single keyword (if there is a single token
+  class to assign) or as a sequential collection (vector, list and so on).
+
+  Example:
+
+  (defrules *tokens*
+    :keep :letter
+    :drop [:format :control]"
   (let [dyname (with-meta name {:dynamic true})
         calls  (map #(cons 'assoc-rule %1) (partition-all 2 kvs))]
     `(do
        (defonce ~dyname tokens-seed)
-       (alter-var-root (var ~dyname) #(-> %1 ~@calls)))))
+       (alter-var-root (var ~dyname) #(-> %1 (clear-rules) ~@calls)))))
 
 (defn get-token-rule
   "Returns a token rule for a character given as the first argument."
