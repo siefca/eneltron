@@ -1,4 +1,4 @@
-(ns ^{:doc    "Eneltron library – tokenization support."
+(ns ^{:doc    "Eneltron library, tokenization support."
       :author "Paweł Wilk"}
     
     eneltron.tokens
@@ -181,7 +181,8 @@
 ;;
 
 (defn get-token-info
-  "Gets token class and token rule for a given character."
+  "Gets token class and token rule for a given character. Returns a map with
+  keys :token-rule and :token-class."
   ([^Character chr] (get-token-info chr *tokens*))
   ([^Character chr tokens]
    (let [r (get-token-rule  chr tokens)

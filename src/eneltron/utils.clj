@@ -1,4 +1,4 @@
-(ns ^{:doc    "Eneltron library – utility functions."
+(ns ^{:doc    "Eneltron library, utility functions."
       :author "Paweł Wilk"}
     eneltron.utils)
 

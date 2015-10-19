@@ -1,6 +1,8 @@
-(ns eneltron.chars
-  ^{:doc "Eneltron library – character types and operations."
-    :author "Paweł Wilk"}
+(ns ^{:doc "Eneltron library, character types and operations."
+      :author "Paweł Wilk"}
+    
+    eneltron.chars
+  
   (:require [djy.char :as ch]
             [djy.char :exclude [next symbol?] :refer :all]))
 
