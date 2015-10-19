@@ -1,6 +1,8 @@
-(ns eneltron.tokens
-  ^{:doc "Eneltron library – tokenization support."
-    :author "Paweł Wilk"}
+(ns ^{:doc    "Eneltron library – tokenization support."
+      :author "Paweł Wilk"}
+    
+    eneltron.tokens
+  
   (:require [eneltron.utils :refer :all]
             [eneltron.chars :refer :all]))
 

@@ -1,6 +1,6 @@
-(ns eneltron.utils
-  ^{:doc "Eneltron library – utility functions."
-    :author "Paweł Wilk"})
+(ns ^{:doc    "Eneltron library – utility functions."
+      :author "Paweł Wilk"}
+    eneltron.utils)
 
 (defmacro defonce-var
   "Works in the same way like defonce but always returns Var object."
