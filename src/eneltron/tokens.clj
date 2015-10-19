@@ -76,16 +76,24 @@
   cleared."
   [mtok]
   (assoc mtok :__ops {}))
+
+(defn- reduce-ops
+  "Helper function that updates operations branch in tokens map using reduce on
+  token classes."
+  [f mtok token-classes]
+  (update-in mtok [:__ops] #(reduce f %1 token-classes)))
+
 (defn assoc-rule
   "Associates a token rule given as the second argument with a token class given
   as the last argument by updating a map passed as the first argument. If there
   are more arguments, it does that for any element (any token class).
   
   Returns an updated map."
-  ([mtok token-rule token-class]  ;; fixme: handle vectors/colls as a base case
-   (update-in mtok [:__ops token-class] token-rule))
+  ([mtok token-rule token-classes]
+   (let [tclasses (if (seq? token-classes) token-classes (list token-classes))]
+     (reduce-ops #(assoc %1 %2 token-rule) mtok tclasses)))
   ([mtok token-rule token-class & other-classes]
-   (reduce #(assoc-rule %1 %2 token-rule) mtok (cons token-class other-classes))))
+   (assoc-rule mtok token-rule (cons token-class other-classes))))
 
 (defmacro defrules
   [name & kvs]
