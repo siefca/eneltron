@@ -71,6 +71,11 @@
 ;; Token rules operations.
 ;;
 
+(defn clear-rules
+  "Takes token mappings and clears rules section. Returns new map with rules
+  cleared."
+  [mtok]
+  (assoc mtok :__ops {}))
 (defn assoc-rule
   "Associates a token rule given as the second argument with a token class given
   as the last argument by updating a map passed as the first argument. If there
