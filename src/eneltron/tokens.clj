@@ -200,11 +200,11 @@
             part-chars  (take-while #(= token-class (tokens %1)) next-chars)
             results     (cons first-char part-chars)
             rest-chars  (drop (count part-chars) next-chars)
-            exe         (tokenize rest-chars tokens token-rules)]
+            next-call   (tokenize rest-chars tokens token-rules)]
         (case token-rule
-          :drop exe
-          :keep (cons results exe)
-          (cons results exe)))))))
+          :drop next-call
+          :keep (cons (with-meta results {:token-class token-class}) next-call)
+          (cons (with-meta results {:token-class token-class}) next-call)))))))
 
 (defn initialize-tokenizer
   "Initializes character->:token-class and :token-class->:token-rule mappings
