@@ -63,35 +63,38 @@
 (defn- update-section
   "Helper function that updates branch in tokenizer's configuration map using
   reduce. Args: function map section elements-source"
-  [f mtok sect src-seq]
+  [sect mtok f src-seq]
   (update-in mtok [sect] #(reduce f %1 src-seq)))
 
 ;; Token classes operations.
 ;;
 
 (defn assoc-char
-  "Associates character given as the last argument with a token class given as
-  the second argument by updating confguration map passed as the first argument.
+  "Associates numeric type of character given as the last argument with a token
+  class given as the second argument by updating confguration map passed as the
+  first argument.
   
   Returns an updated map."
   [mtok token-class ^Character c]
-  (assoc-in mtok [:classes c] token-class))
+  (assoc-in mtok [:classes (get-char-type-nr c)] token-class))
 
 (defn assoc-chars
-  "Associates each character from a sequence of characters given as a last
-  argument with a token class given as a third argument by updating a map passed
-  as a first argument.
-  
+  "Associates numeric type of each character from a sequence of characters given
+  as a last argument with a token class given as a third argument by updating
+  a map passed as a first argument.
+    
   Returns an updated map."
   [mtok token-class chars]
-  (update-section :classes mtok #(assoc %1 %2 token-class) (ensure-char-seq chars)))
+  (update-section :classes mtok
+                  #(assoc %1 (get-char-type-nr %2) token-class)
+                  (ensure-char-seq chars)))
 
 (defmacro assoc-chars->
   "Updates a map given as the first argument in a way that it associates each
-  character from a sequence of characters (or a string) given as the last
-  elements of pairs with token classes given as the first elements of pairs.
-  with a token class given as a third argument by updating a map passed as
-  a first argument.
+  numeric type of character from a sequence of characters (or a string) given as
+  the last elements of pairs with token classes given as the first elements of
+  pairs. with a token class given as a third argument by updating a map passed
+  as a first argument.
   
   Returns an updated map."
   [mtok & kvs]
@@ -99,9 +102,9 @@
     `(-> ~mtok ~@calls)))
 
 (defmacro defclasses
-  "Creates mappings character->:token-class. Takes name of dynamic variable to
-  define and mappings expressed as pairs, where first element should be
-  a character and second a keyword naming its class."
+  "Creates mappings character-type-nr->:token-class. Takes name of dynamic
+  variable to define and mappings expressed as pairs, where first element should
+  be a character and second a keyword naming its class."
   [name & kvs]
   (let [dyname (with-meta name {:dynamic true})
         calls  (pmap #(cons 'assoc-chars %1) (partition-all 2 kvs))]
@@ -110,7 +113,7 @@
 (defn get-class
   "Gets token class for a given character."
   [^Character chr & [mtok]]
-  (get-conf-section :classes mtok) chr)
+  ((get-conf-section :classes mtok) (get-char-type-nr chr)))
 
 ;; Token rules operations.
 ;;
@@ -126,15 +129,14 @@
    (if (= :default token-rule)
      (recur mtok token-classes token-rule)
      (let [tclasses (pmap keyword
-                         (if (sequential? token-classes)
-                           token-classes
-                           (list token-classes)))]
+                          (if (sequential? token-classes)
+                            token-classes
+                            (list token-classes)))]
        (update-section :rules mtok #(assoc %1 %2 token-rule) tclasses))))
   ([mtok token-rule token-class & other-classes]
    (assoc-rule mtok token-rule (cons token-class other-classes))))
 
 (defmacro defrules
-  [name & kvs]
   "Definies new set of rules for token classes by creatnig mappings
   :token-class->:token-rule. Takes name of dynamic variable to define (if not
   defined already) and mappings expressed as pairs, where first elements should
@@ -151,6 +153,7 @@
     :drop [:format :control]
   
   Returns a dynamic Var bound to token-classes map (character->:token-class)."
+  [name & kvs]
   (let [dyname (with-meta name {:dynamic true})
         calls  (pmap #(cons 'assoc-rule %1) (partition-all 2 kvs))]
     `(let [v# (defonce-var ~dyname conf-seed)]
@@ -169,8 +172,8 @@
 
 (defn classify-characters
   "Associates token classes with characters by creatnig mappings
-  character->:token-class for a sequence of unicode characters given as the
-  second argument and an existing confguration map as the first.
+  character-class-number->:token-class for a sequence of unicode characters
+  given as the second argument and an existing confguration map as the first.
   
   The last argument should be a map containing
   pairs :character-class->:token-class, where the first element should be
@@ -183,12 +186,11 @@
   instead of a map.
   
   Returns an updated map of tokenizer configuration."
-  ([mtok chars class-mappings]
-   (update-section :classes mtok
-                   #(assoc %1 %2 (class-mappings (get-char-type %2)))
-                   chars))
-  ([mtok chars fk & kvs]
-   (classify-characters mtok chars (apply hash-map (cons fk kvs)))))
+  ([mtok class-mappings]
+   (assoc-in mtok [:classes] (clojure.set/rename-keys
+                              class-mappings type-to-unicode-class)))
+  ([mtok fk & kvs]
+   (classify-characters mtok (apply hash-map (cons fk kvs)))))
 
 (defmacro genclasses
   "Creates a dynamic variable with name given as the first argument and binds it
@@ -203,7 +205,7 @@
        (alter-var-root
         v# #(-> %1
                 (clear-classes)
-                (classify-characters all-chars ~@kvs)))
+                (classify-characters ~@kvs)))
        v#)))
 
 ;; Options management.
@@ -226,9 +228,9 @@
    (lazy-seq
     (when-first [first-char chars]
       (let [next-chars  (next chars)
-            token-class (classes first-char)
+            token-class (classes (get-char-type-nr first-char))
             token-rule  (rules token-class (:default rules))
-            part-chars  (take-while #(= token-class (classes %1)) next-chars)
+            part-chars  (take-while #(= token-class (classes (get-char-type-nr %1))) next-chars)
             results     (cons first-char part-chars)
             rest-chars  (drop (count part-chars) next-chars)
             next-call   (tokenize-core rest-chars conf classes rules opts)]
@@ -250,41 +252,46 @@
 (defn initialize
   "Initializes character->:token-class and :token-class->:token-rule mappings
   with default values."
-  []
-  (genclasses *config*
-              :UPPERCASE_LETTER          :letter
-              :COMBINING_SPACING_MARK    :space
-              :CONNECTOR_PUNCTUATION     :letter
-              :CONTROL                   :control
-              :CURRENCY_SYMBOL           :symbol
-              :DASH_PUNCTUATION          :letter
-              :DECIMAL_DIGIT_NUMBER      :number
-              :ENCLOSING_MARK            :punctuation
-              :END_PUNCTUATION           :punctuation
-              :FINAL_QUOTE_PUNCTUATION   :punctuation
-              :FORMAT                    :format
-              :INITIAL_QUOTE_PUNCTUATION :punctuation
-              :LETTER_NUMBER             :number
-              :LINE_SEPARATOR            :separator
-              :LOWERCASE_LETTER          :letter
-              :MATH_SYMBOL               :letter
-              :MODIFIER_LETTER           :letter
-              :MODIFIER_SYMBOL           :symbol
-              :NON_SPACING_MARK          :letter
-              :OTHER_LETTER              :letter
-              :OTHER_NUMBER              :number
-              :OTHER_PUNCTUATION         :punctuation
-              :OTHER_SYMBOL              :symbol
-              :PARAGRAPH_SEPARATOR       :separator
-              :PRIVATE_USE               :private
-              :SPACE_SEPARATOR           :separator
-              :START_PUNCTUATION         :punctuation
-              :SURROGATE                 :letter
-              :TITLECASE_LETTER          :letter
-              :UNASSIGNED                :unassigned)
+  [& [option]]
+  (if (= option :fast)
+    nil
+    ;;(load-classes *config* "resources/token-classes.clj")
+    (genclasses *config*
+                :UPPERCASE_LETTER          :letter
+                :COMBINING_SPACING_MARK    :space
+                :CONNECTOR_PUNCTUATION     :letter
+                :CONTROL                   :control
+                :CURRENCY_SYMBOL           :symbol
+                :DASH_PUNCTUATION          :letter
+                :DECIMAL_DIGIT_NUMBER      :number
+                :ENCLOSING_MARK            :punctuation
+                :END_PUNCTUATION           :punctuation
+                :FINAL_QUOTE_PUNCTUATION   :punctuation
+                :FORMAT                    :format
+                :INITIAL_QUOTE_PUNCTUATION :punctuation
+                :LETTER_NUMBER             :number
+                :LINE_SEPARATOR            :separator
+                :LOWERCASE_LETTER          :letter
+                :MATH_SYMBOL               :letter
+                :MODIFIER_LETTER           :letter
+                :MODIFIER_SYMBOL           :symbol
+                :NON_SPACING_MARK          :letter
+                :OTHER_LETTER              :letter
+                :OTHER_NUMBER              :number
+                :OTHER_PUNCTUATION         :punctuation
+                :OTHER_SYMBOL              :symbol
+                :PARAGRAPH_SEPARATOR       :separator
+                :PRIVATE_USE               :private
+                :SPACE_SEPARATOR           :separator
+                :START_PUNCTUATION         :punctuation
+                :SURROGATE                 :letter
+                :TITLECASE_LETTER          :letter
+                :UNASSIGNED                :unassigned))
   
   (defrules *config*
     :default :keep
     :keep    [:letter :number :space :symbol :separator :punctuation]
     :drop    [:control :format :private]))
+
+(initialize)
 

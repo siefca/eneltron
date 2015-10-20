@@ -41,6 +41,9 @@
    Character/TITLECASE_LETTER          :TITLECASE_LETTER
    Character/UNASSIGNED                :UNASSIGNED})
 
+(def type-to-unicode-class
+  (clojure.set/map-invert unicode-class-to-type))
+
 (def all-chars
   "Lazy sequence of all characters. Note that some supplementary characters are
   represented as java.lang.String objects!"
@@ -54,10 +57,15 @@
   `(let [s# ~s]
      (if (seq? s#) s# (char-seq s#))))
 
+(defn get-char-type-nr
+  "Returns a type number of a character given as the first argument."
+  [^Character c]
+  (try (Character/getType c)
+       (catch ClassCastException e
+         (Character/getType (code-point-of c)))))
+
 (defn get-char-type
   "Returns a type of a character given as the first argument."
-  [^Character c] ; just Character?
-  (unicode-class-to-type
-   (try (Character/getType c)
-        (catch ClassCastException e
-          (Character/getType (code-point-of c)))) :UNASSIGNED))
+  [^Character c]
+  (unicode-class-to-type (get-char-type-nr c) :UNASSIGNED))
+
