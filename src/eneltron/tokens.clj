@@ -1,7 +1,7 @@
 (ns ^{:doc    "Eneltron library, tokenization support."
       :author "Paweł Wilk"}
     
-    eneltron.tokens
+    eneltron.tokenizer
   
   (:require [eneltron.utils :refer :all]
             [eneltron.chars :refer :all]))
@@ -60,16 +60,22 @@
   [section & [mtok]]
   ((or mtok *config*) section {}))
 
+(defn- update-section
+  "Helper function that updates branch in tokenizer's configuration map using
+  reduce. Args: function map section elements-source"
+  [f mtok sect src-seq]
+  (update-in mtok [sect] #(reduce f %1 src-seq)))
+
 ;; Token classes operations.
 ;;
 
 (defn assoc-char
   "Associates character given as the last argument with a token class given as
-  the second argument by updating a map passed as the first argument.
+  the second argument by updating confguration map passed as the first argument.
   
   Returns an updated map."
   [mtok token-class ^Character c]
-  (assoc mtok c token-class))
+  (assoc-in mtok [:classes c] token-class))
 
 (defn assoc-chars
   "Associates each character from a sequence of characters given as a last
@@ -78,7 +84,7 @@
   
   Returns an updated map."
   [mtok token-class chars]
-  (reduce #(assoc %1 %2 token-class) mtok (ensure-char-seq chars)))
+  (update-section :classes mtok #(assoc %1 %2 token-class) (ensure-char-seq chars)))
 
 (defmacro assoc-chars->
   "Updates a map given as the first argument in a way that it associates each
@@ -101,18 +107,13 @@
         calls  (pmap #(cons 'assoc-chars %1) (partition-all 2 kvs))]
     `(def ~dyname (-> conf-seed ~@calls))))
 
-(defn get-token-class
+(defn get-class
   "Gets token class for a given character."
-  ([^Character chr & [mtok]] (get-conf-section :classes mtok) chr))
+  [^Character chr & [mtok]]
+  (get-conf-section :classes mtok) chr)
 
 ;; Token rules operations.
 ;;
-
-(defn- reduce-mtok
-  "Helper function that updates branch in tokenizer's configuration map using
-  reduce. Args: function map section elements-source"
-  [f mtok sect src-seq]
-  (update-in mtok [sect] #(reduce f %1 src-seq)))
 
 (defn assoc-rule
   "Associates a token rule given as the second argument with a token class given
@@ -128,7 +129,7 @@
                          (if (sequential? token-classes)
                            token-classes
                            (list token-classes)))]
-       (reduce-mtok #(assoc %1 %2 token-rule) mtok :rules tclasses))))
+       (update-section :rules mtok #(assoc %1 %2 token-rule) tclasses))))
   ([mtok token-rule token-class & other-classes]
    (assoc-rule mtok token-rule (cons token-class other-classes))))
 
@@ -156,7 +157,7 @@
        (alter-var-root v# #(-> %1 (clear-rules) ~@calls))
        v#)))
 
-(defn get-token-rule
+(defn get-rule
   "Returns a token rule for a character given as the first argument."
   ([^Character chr & [mtok]]
    (let [tokrul (get-conf-section :rules   mtok)
@@ -183,17 +184,9 @@
   
   Returns an updated map of tokenizer configuration."
   ([mtok chars class-mappings]
-   (if-let [first-char (first chars)]
-     (let [next-chars  (next chars)
-           tokenclass  (class-mappings (get-char-type first-char))
-           part-chars  (take-while
-                        #(= tokenclass (class-mappings (get-char-type %1)))
-                        next-chars)
-           characters  (cons first-char part-chars)
-           rest-chars  (drop (count part-chars) next-chars)
-           new-mtok    (reduce-mtok #(assoc %1 %2 tokenclass) mtok :classes characters)]
-       (recur new-mtok rest-chars class-mappings))
-     mtok))
+   (update-section :classes mtok
+                   #(assoc %1 %2 (class-mappings (get-char-type %2)))
+                   chars))
   ([mtok chars fk & kvs]
    (classify-characters mtok chars (apply hash-map (cons fk kvs)))))
 
@@ -220,12 +213,12 @@
 ;; Tokenization.
 ;;
 
-(defn get-token-info
+(defn get-char-info
   "Gets token class and token rule for a given character. Returns a map with
   keys :token-rule and :token-class."
   ([^Character chr & [mtok]]
-   (let [r (get-token-rule  chr mtok)
-         c (get-token-class chr mtok)]
+   (let [r (get-rule  chr mtok)
+         c (get-class chr mtok)]
      {:token-rule r :token-class c})))
 
 (defn- tokenize-core
@@ -254,7 +247,7 @@
          chars (ensure-char-seq text)]
      (tokenize-core chars conf clss ruls opts))))
 
-(defn initialize-tokenizer
+(defn initialize
   "Initializes character->:token-class and :token-class->:token-rule mappings
   with default values."
   []
