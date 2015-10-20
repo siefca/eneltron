@@ -224,30 +224,36 @@
      {:token-rule r :token-class c})))
 
 (defn- tokenize-core
-  ([chars conf classes rules opts]
-   (lazy-seq
-    (when-first [first-char chars]
-      (let [next-chars  (next chars)
-            token-class (classes (get-char-type-nr first-char))
-            token-rule  (rules token-class (:default rules))
-            part-chars  (take-while #(= token-class (classes (get-char-type-nr %1))) next-chars)
-            results     (cons first-char part-chars)
-            rest-chars  (drop (count part-chars) next-chars)
-            next-call   (tokenize-core rest-chars conf classes rules opts)]
-        (case token-rule
-          :drop next-call
-          :keep (cons (with-meta results {:token-class token-class}) next-call)
-          (cons (with-meta results {:token-class token-class}) next-call)))))))
+  [chars conf classes rules opts]
+  (lazy-seq
+   (when-first [first-char chars]
+     (let [next-chars  (next chars)
+           token-class (classes (get-char-type-nr first-char))
+           token-rule  (rules token-class (:default rules))
+           part-chars  (take-while #(= token-class (classes (get-char-type-nr %1))) next-chars)
+           results     (cons first-char part-chars)
+           rest-chars  (drop (count part-chars) next-chars)
+           next-call   (tokenize-core rest-chars conf classes rules opts)]
+       (case token-rule
+         :drop next-call
+         :keep (cons (with-meta results {:token-class token-class}) next-call)
+         (cons (with-meta results {:token-class token-class}) next-call))))))
 
 (defn tokenize
   "Tokenizes a string or a sequence of characters."
-  ([text & {:as options}]
-   (let [conf  (:config options)
-         opts  (merge options (get-conf-section :options conf))
-         ruls  (get-conf-section :rules   conf)
-         clss  (get-conf-section :classes conf)
-         chars (ensure-char-seq text)]
-     (tokenize-core chars conf clss ruls opts))))
+  [text & {:as options}]
+  (let [conf  (:config options)
+        opts  (merge options (get-conf-section :options conf))
+        ruls  (get-conf-section :rules   conf)
+        clss  (get-conf-section :classes conf)
+        chars (ensure-char-seq text)]
+    (tokenize-core chars conf clss ruls opts)))
+
+;; TODO
+
+(defn tokenize-sentence
+  [text & {:as options}]
+  )
 
 (defn initialize
   "Initializes character->:token-class and :token-class->:token-rule mappings
