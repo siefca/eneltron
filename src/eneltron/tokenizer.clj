@@ -13,8 +13,9 @@
    :squeeze-chars   nil   ; characters to squeeze
    :keep-newlines   true  ; whether to keep newlines (true/false/:inherit)
    :tag-quotes      true  ;
-   :tag-parens      true  ;
-   :unify-quotes    true  ;
+   :tag-brackets    true  ; whether to tag brackets with additional metadata
+   :unify-brackets  true  ; whether to replace brackets by basic ones (true/false)
+   :unify-quotes    true  ; whether to replace quotes by basic ones (true/false)
    :input-sentences false ; whether to drop final dots
    :trim            true  ; trim spaces from beginnings and ends of sentences
    })
@@ -237,7 +238,7 @@
        (case token-rule
          :drop next-call
          :keep (cons (with-meta results {:token-class token-class}) next-call)
-         (cons (with-meta results {:token-class token-class}) next-call))))))
+         (next-call))))))
 
 (defn tokenize
   "Tokenizes a string or a sequence of characters."
