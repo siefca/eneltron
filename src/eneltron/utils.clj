@@ -27,8 +27,8 @@
 ;;
 
 (defn- fargs-count-clj
-  "Uses Var's :arglists to determine number of arguments the function bound to
-  it takes."
+  "Uses Var's :arglists to determine number of arguments taken by a function
+  that is bound to it."
   [varobj]
   (when-some [larity (-> varobj meta :arglists first)]
     (let [count-all (count larity)
@@ -51,7 +51,7 @@
 
 (defmacro fargs-count
   "Determines the number of arguments that function f takes with its most wide
-  arity. Returns a vector in which the first element is a number of arguments,
+  arity. Returns a vector the first element of which is a number of arguments,
   the second is true if function takes variadic arguments (false otherwise) and
   the third is either :cjl (if metadata were used to determine arity)
   or :jvm (if reflection methods were used)."
@@ -61,26 +61,27 @@
          (fargs-count-jvm ~f))))
 
 (defmacro fargs
-  "Wraps function that takes some number of args into a function that takes
-  variable number of args and always passes the given number of them when
-  called.
+  "Passes calls to a function f that takes some number of arguments through
+  a generated function that takes variable number of arguments and always puts
+  the given or determined number of them when calling f. Returns a function
+  object.
   
-  If the number is not given, it will be determined using metadata (if the given
-  object is a symbol bound to a Var) or JVM reflection calls to anonymous class
-  representing a function object.
+  If the number (nr) is not given, it will be determined using metadata (if the
+  given object is a symbol bound to a Var) or using JVM reflection calls to
+  anonymous class representing a function object.
   
   If the declared number of arguments is lower than the number of arguments
-  passed, then it ignores exceeding ones and not passes them.
+  actually passed to a wrapper call, the exceeding ones will be ignored.
   
-  When the declared number of arguments that original function takes is higher
-  than the number of arguments that are really passed to it, it pads extra
-  arguments with nil values.
+  If the declared number of arguments that original function expects is higher
+  than the number of arguments really passed during call, they will be padded
+  with nil values.
   
-  When the :varargs option was given (or the variadic function was detected when
-  no number of arguments was explicitly passed), all the arguments received by
-  a wrapper will be passed as they are, regardless of their count. The
-  obligatory arguments will be padded with nil values up to their required
-  count if necessary."
+  When the :varargs option is given (or the variadic function was detected when
+  no number was explicitly passed), then all of the arguments received by
+  a wrapper are passed as they are, regardless of their count. The obligatory
+  arguments will be padded with nil values up to their required count if
+  necessary (in case if their count is lower than expected)."
   ([f]
    `(let [[nr# va# _] (fargs-count ~f)]
       (fargs ~f nr# va#)))
